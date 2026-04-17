@@ -41,6 +41,67 @@ python3 app.py
 
 Open [http://localhost:5001](http://localhost:5001).
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Browser (Frontend)                       │
+│                                                                 │
+│  ┌──────────────────────┐     ┌──────────────────────────────┐  │
+│  │     Input Panel       │     │     Output Panel             │  │
+│  │                       │     │                              │  │
+│  │  Raw text / JSON      │     │  Anonymized text / JSON      │  │
+│  │  with PII             │     │  with fake data              │  │
+│  └──────────┬────────────┘     └──────────────▲───────────────┘  │
+│             │                                 │                  │
+│             │  POST /anonymize                │  JSON response   │
+│             │  { text: "..." }                │  { result, entities }
+│             │                                 │                  │
+│  ┌──────────┴─────────────────────────────────┴───────────────┐  │
+│  │  Entity Summary Bar  ·  Copy  ·  Download  ·  Clear        │  │
+│  └────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Flask Backend (app.py)                       │
+│                                                                 │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │                    Presidio Analyzer                        │  │
+│  │                                                            │  │
+│  │  spaCy NER (en_core_web_lg)    Custom Pattern Recognizers  │  │
+│  │  ┌──────────────────────┐      ┌────────────────────────┐  │  │
+│  │  │ PERSON, LOCATION,    │      │ SSN    (\d{3}-\d{2}-…) │  │  │
+│  │  │ DATE_TIME, NRP       │      │ CC     (\d{4}-\d{4}-…) │  │  │
+│  │  └──────────────────────┘      │ Phone  (\(\d{3}\)…)    │  │  │
+│  │                                └────────────────────────┘  │  │
+│  └──────────────────────┬─────────────────────────────────────┘  │
+│                         │ raw entity list                        │
+│                         ▼                                        │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │                  Post-Processing Pipeline                   │  │
+│  │                                                            │  │
+│  │  1. Clamp to line boundaries                               │  │
+│  │  2. Protect JSON keys                                      │  │
+│  │  3. Filter false positives                                 │  │
+│  │     · IDs with digits  · State abbreviations  · Zip codes  │  │
+│  │  4. Inject synthetic entities for name-typed JSON fields    │  │
+│  │  5. Resolve overlaps (score → priority → span length)      │  │
+│  │  6. Expand partial PERSON matches to full JSON values       │  │
+│  └──────────────────────┬─────────────────────────────────────┘  │
+│                         │ cleaned entity list                    │
+│                         ▼                                        │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │                   Faker Replacement Engine                  │  │
+│  │                                                            │  │
+│  │  · Deterministic seeding (same input → same fake)          │  │
+│  │  · Format-aware: phone (xxx) xxx-xxxx, CC xxxx-xxxx-…     │  │
+│  │  · Single names vs full names based on word count          │  │
+│  │  · Entity-specific generators (name, email, SSN, IP, …)   │  │
+│  └────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ## How it works
 
 The backend uses [Microsoft Presidio](https://github.com/microsoft/presidio) for PII detection and [Faker](https://github.com/joke2k/faker) for generating replacements. On top of Presidio's built-in NER, there are custom recognizers and post-processing rules that:
