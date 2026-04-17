@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anonymizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --carbon-90: #1F232D;
+            --carbon-80: #303541;
+            --carbon: #3F4450;
+            --carbon-60: #5C6270;
+            --carbon-50: #717684;
+            --carbon-40: #8A8F9E;
+            --carbon-30: #A4A9B6;
+            --carbon-20: #C9CBD4;
+            --carbon-10: #EBEBF0;
+            --arctic: #F6F6F9;
+            --white: #FFFFFF;
+            --envoy-red: #FA4338;
+            --envoy-red-glow: rgba(250, 67, 56, 0.15);
+            --garnet: #A00C1F;
+            --cilantro: #21944E;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--carbon-90);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            padding: 40px 0 0;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 1.75rem;
+            font-weight: 300;
+            letter-spacing: -0.01em;
+            color: var(--white);
+        }
+
+        header h1 span {
+            color: var(--envoy-red);
+        }
+
+        header p {
+            margin-top: 8px;
+            font-size: 0.875rem;
+            font-weight: 400;
+            color: var(--carbon-30);
+        }
+
+        main {
+            width: 100%;
+            max-width: 1120px;
+            padding: 32px 24px 48px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            flex: 1;
+            min-height: 460px;
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .panel label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--carbon-40);
+        }
+
+        textarea {
+            flex: 1;
+            background: var(--carbon-80);
+            border: 1px solid var(--carbon);
+            border-radius: 8px;
+            padding: 20px;
+            color: var(--white);
+            font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.8125rem;
+            line-height: 1.75;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            border-color: var(--envoy-red);
+        }
+
+        textarea::placeholder {
+            color: var(--carbon-50);
+        }
+
+        #output {
+            background: var(--carbon-90);
+            border-color: var(--carbon);
+        }
+
+        /* Entity summary bar */
+        .summary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            min-height: 32px;
+            padding: 0 8px;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .summary.visible {
+            opacity: 1;
+        }
+
+        .summary-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            background: var(--carbon-80);
+            border: 1px solid var(--carbon);
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--carbon-20);
+        }
+
+        .summary-chip .count {
+            color: var(--envoy-red);
+        }
+
+        .summary-total {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--cilantro);
+        }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Nunito Sans', -apple-system, sans-serif;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        button:focus-visible {
+            outline: 2px solid var(--envoy-red);
+            outline-offset: 2px;
+        }
+
+        #anonymize-btn {
+            background: var(--envoy-red);
+            color: var(--white);
+            min-width: 170px;
+        }
+
+        #anonymize-btn:hover {
+            background: #e83c32;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px var(--envoy-red-glow);
+        }
+
+        #anonymize-btn:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        #anonymize-btn:disabled {
+            background: var(--carbon-60);
+            color: var(--carbon-40);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--carbon-30);
+            border: 1px solid var(--carbon);
+            padding: 12px 20px;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--carbon-60);
+            color: var(--white);
+        }
+
+        .spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.25);
+            border-top-color: var(--white);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #anonymize-btn.loading .spinner { display: inline-block; }
+        #anonymize-btn.loading .btn-text { display: none; }
+
+        .hint {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--carbon-50);
+        }
+
+        .hint kbd {
+            display: inline-block;
+            padding: 1px 6px;
+            border: 1px solid var(--carbon);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.7rem;
+            color: var(--carbon-30);
+            background: var(--carbon-80);
+        }
+
+        @media (max-width: 700px) {
+            .panels { grid-template-columns: 1fr; min-height: auto; }
+            textarea { min-height: 200px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Anony<span>mizer</span></h1>
+        <p>Paste your data, get realistic fakes back. It's that simple.</p>
+    </header>
+
+    <main>
+        <div class="panels">
+            <div class="panel">
+                <label>Input</label>
+                <textarea id="input" placeholder="Paste text containing PII here...&#10;&#10;e.g. John Smith called from 555-123-4567&#10;His email is john.smith@company.com&#10;SSN: 123-45-6789"></textarea>
+            </div>
+            <div class="panel">
+                <label>Anonymized output</label>
+                <textarea id="output" readonly placeholder="Anonymized text will appear here..."></textarea>
+            </div>
+        </div>
+
+        <div class="summary" id="summary"></div>
+
+        <div class="actions">
+            <button id="anonymize-btn" onclick="anonymize()">
+                <span class="spinner"></span>
+                <span class="btn-text">Anonymize</span>
+            </button>
+            <button class="btn-secondary" id="copy-btn" onclick="copyOutput()">Copy</button>
+            <button class="btn-secondary" id="download-btn" onclick="downloadOutput()">Download</button>
+            <button class="btn-secondary" id="clear-btn" onclick="clearAll()">Clear</button>
+        </div>
+        <p class="hint"><kbd>Cmd</kbd> + <kbd>Enter</kbd> to anonymize</p>
+    </main>
+
+    <script>
+        const input = document.getElementById('input');
+        const output = document.getElementById('output');
+        const btn = document.getElementById('anonymize-btn');
+        const summary = document.getElementById('summary');
+
+        const ENTITY_LABELS = {
+            PERSON: 'names',
+            EMAIL_ADDRESS: 'emails',
+            PHONE_NUMBER: 'phones',
+            US_SSN: 'SSNs',
+            CREDIT_CARD: 'cards',
+            IP_ADDRESS: 'IPs',
+            DATE_TIME: 'dates',
+            LOCATION: 'locations',
+            URL: 'URLs',
+            US_BANK_NUMBER: 'bank numbers',
+            EXPIRY: 'expiries',
+            IBAN_CODE: 'IBANs',
+            NRP: 'nationalities',
+            US_DRIVER_LICENSE: 'licenses',
+        };
+
+        function renderSummary(entities) {
+            if (!entities || Object.keys(entities).length === 0) {
+                summary.classList.remove('visible');
+                summary.innerHTML = '';
+                return;
+            }
+
+            let total = 0;
+            let chips = '';
+            for (const [type, count] of Object.entries(entities)) {
+                total += count;
+                const label = ENTITY_LABELS[type] || type.toLowerCase().replace(/_/g, ' ');
+                chips += `<span class="summary-chip"><span class="count">${count}</span> ${label}</span>`;
+            }
+
+            summary.innerHTML = `<span class="summary-total">${total} replaced</span>` + chips;
+            summary.classList.add('visible');
+        }
+
+        async function anonymize() {
+            const text = input.value.trim();
+            if (!text) return;
+
+            btn.classList.add('loading');
+            btn.disabled = true;
+            output.value = '';
+            summary.classList.remove('visible');
+
+            try {
+                const res = await fetch('/anonymize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await res.json();
+                output.value = data.result;
+                renderSummary(data.entities);
+            } catch (e) {
+                output.value = 'Error: ' + e.message;
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+
+        function copyOutput() {
+            if (!output.value) return;
+            navigator.clipboard.writeText(output.value);
+            const copyBtn = document.getElementById('copy-btn');
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => copyBtn.textContent = 'Copy', 1500);
+        }
+
+        function downloadOutput() {
+            const text = output.value;
+            if (!text) return;
+
+            // Auto-detect if JSON
+            let ext = 'txt';
+            let mime = 'text/plain';
+            try {
+                JSON.parse(text);
+                ext = 'json';
+                mime = 'application/json';
+            } catch {}
+
+            const blob = new Blob([text], { type: mime });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `anonymized.${ext}`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearAll() {
+            input.value = '';
+            output.value = '';
+            summary.classList.remove('visible');
+            summary.innerHTML = '';
+            input.focus();
+        }
+
+        input.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') anonymize();
+        });
+    </script>
+</body>
+</html>

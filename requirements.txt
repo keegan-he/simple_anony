@@ -1,0 +1,5 @@
+flask
+presidio-analyzer
+presidio-anonymizer
+faker
+spacy
